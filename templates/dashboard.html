@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Checklist de Contratação{% endblock %}
+
+{% block content %}
+  <div class="page-title">
+    <div>
+      <h1>Dashboard</h1>
+      <div class="small-muted">Visão geral dos processos e pendências documentais.</div>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('demand_new') }}">
+      <i data-lucide="plus" aria-hidden="true"></i>
+      Nova demanda
+    </a>
+  </div>
+
+  <form class="section-panel no-print" method="get">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label" for="unit_id">Unidade</label>
+        <select class="form-select" id="unit_id" name="unit_id">
+          <option value="">Todas</option>
+          {% for unit in units %}
+            <option value="{{ unit.id }}" {% if filters.unit_id|string == unit.id|string %}selected{% endif %}>{{ unit.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="status">Status</label>
+        <select class="form-select" id="status" name="status">
+          <option value="">Todos</option>
+          {% for status in process_statuses %}
+            <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="contract_type">Modalidade</label>
+        <select class="form-select" id="contract_type" name="contract_type">
+          <option value="">Todas</option>
+          {% for type in contract_types %}
+            <option value="{{ type }}" {% if filters.contract_type == type %}selected{% endif %}>{{ type }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="start_date">De</label>
+        <input class="form-control" id="start_date" type="date" name="start_date" value="{{ filters.start_date }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="end_date">Até</label>
+        <input class="form-control" id="end_date" type="date" name="end_date" value="{{ filters.end_date }}">
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">
+          <i data-lucide="filter" aria-hidden="true"></i>
+          Filtrar
+        </button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('dashboard') }}">
+          <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+          Limpar
+        </a>
+      </div>
+    </div>
+  </form>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <span class="stat-label">Total de processos</span>
+      <span class="stat-number">{{ counts.total }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Em elaboração</span>
+      <span class="stat-number">{{ counts['Em elaboração'] }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Pendentes de documentos</span>
+      <span class="stat-number">{{ counts['Pendências'] }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Aguardando validação</span>
+      <span class="stat-number">{{ counts['Aguardando validação'] }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Concluídos</span>
+      <span class="stat-number">{{ counts['Concluído'] }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Documentos obrigatórios ausentes</span>
+      <span class="stat-number">{{ counts.pending_docs }}</span>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <section class="section-panel">
+        <div class="section-title">
+          <i data-lucide="alert-triangle" aria-hidden="true"></i>
+          Alertas
+        </div>
+        {% if alerts %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Processo</th>
+                  <th>Documento</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for alert in alerts %}
+                  <tr>
+                    <td>
+                      <a href="{{ url_for('demand_detail', demand_id=alert.demand_id) }}">{{ alert.process_number }}</a>
+                      <div class="small-muted">{{ alert.object }}</div>
+                    </td>
+                    <td>{{ alert.document_name }}</td>
+                    <td><span class="badge text-bg-{{ alert.status|status_class }}">{{ alert.status }}</span></td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">Nenhuma pendência obrigatória encontrada.</div>
+        {% endif %}
+      </section>
+    </div>
+    <div class="col-lg-5">
+      <section class="section-panel">
+        <div class="section-title">
+          <i data-lucide="clock-3" aria-hidden="true"></i>
+          Atualizações recentes
+        </div>
+        {% if recent_demands %}
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Processo</th>
+                  <th>Status</th>
+                  <th>Unidade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for demand in recent_demands %}
+                  <tr>
+                    <td><a href="{{ url_for('demand_detail', demand_id=demand.id) }}">{{ demand.process_number }}</a></td>
+                    <td><span class="badge text-bg-{{ demand.status|status_class }}">{{ demand.status }}</span></td>
+                    <td>{{ demand.unit_name }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">Nenhuma demanda cadastrada.</div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+{% endblock %}

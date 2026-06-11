@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Checklist de Contratação{% endblock %}
+{% block main_class %}auth-wrap{% endblock %}
+
+{% block content %}
+  <section class="auth-panel auth-panel-simple">
+    <div class="auth-brand">
+      <div class="auth-mark">
+        <i data-lucide="clipboard-check" aria-hidden="true"></i>
+      </div>
+      <div>
+        <strong>Checklist Web</strong>
+        <span>licitações</span>
+      </div>
+    </div>
+
+    <form class="auth-card" method="post">
+      <div class="auth-copy">
+        <h1>Acesse sua conta</h1>
+        <p>Controle documental.</p>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="login">Login</label>
+        <input class="form-control form-control-lg" id="login" name="login" type="text" autocomplete="username" placeholder="Digite seu login" required autofocus>
+      </div>
+      <div class="mb-4">
+        <label class="form-label" for="password">Senha</label>
+        <div class="password-field">
+          <input class="form-control form-control-lg" id="password" name="password" type="password" autocomplete="current-password" placeholder="Insira sua senha" required>
+          <button class="password-toggle" type="button" data-password-toggle="#password" aria-label="Mostrar senha" aria-pressed="false">
+            <i data-lucide="eye" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-lg w-100" type="submit">
+        Acessar
+        <i data-lucide="arrow-right" aria-hidden="true"></i>
+      </button>
+    </form>
+
+   
+  </section>
+{% endblock %}

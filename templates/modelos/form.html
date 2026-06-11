@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar modelo' if edit else 'Novo modelo' }} - Checklist de Contratação{% endblock %}
+
+{% block content %}
+  <div class="page-title">
+    <div>
+      <h1>{{ 'Editar modelo' if edit else 'Novo modelo' }}</h1>
+      <div class="small-muted">
+        {{ 'Atualize os dados, remova o arquivo atual ou envie outro arquivo para substituir.' if edit else 'Cadastro de versão e arquivo de referência.' }}
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('model_list') }}">
+      <i data-lucide="arrow-left" aria-hidden="true"></i>
+      Voltar
+    </a>
+  </div>
+
+  <form class="section-panel" method="post" enctype="multipart/form-data">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label" for="title">Título</label>
+        <input class="form-control" id="title" name="title" value="{{ model.title|default('', true) }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="document_type">Tipo de documento</label>
+        <input class="form-control" id="document_type" name="document_type" value="{{ model.document_type|default('', true) }}" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="version">Versão</label>
+        <input class="form-control" id="version" name="version" value="{{ model.version|default('1.0', true) }}" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="status">Status</label>
+        <select class="form-select" id="status" name="status">
+          {% for status in model_statuses %}
+            <option value="{{ status }}" {% if model.status|default('Ativo', true) == status %}selected{% endif %}>{{ status }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="model_file">{{ 'Substituir arquivo' if edit and model.stored_filename else 'Arquivo' }}</label>
+        <input class="form-control" id="model_file" name="model_file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
+        {% if edit %}
+          <div class="small-muted mt-1">
+            {% if model.stored_filename %}
+              Envie um novo arquivo para substituir o atual.
+            {% else %}
+              Envie um arquivo para anexar a este modelo.
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+
+      {% if edit %}
+        <div class="col-12">
+          <div class="model-file-box">
+            <div class="section-title mb-2">
+              <i data-lucide="paperclip" aria-hidden="true"></i>
+              Arquivo atual
+            </div>
+            {% if model.stored_filename %}
+              <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                <div>
+                  <strong>{{ model.original_filename }}</strong>
+                  <div class="small-muted">Este arquivo será mantido se nenhum novo arquivo for enviado.</div>
+                </div>
+                <a class="btn btn-outline-primary" href="{{ url_for('uploaded_file', filename=model.stored_filename) }}" target="_blank">
+                  <i data-lucide="download" aria-hidden="true"></i>
+                  Baixar
+                </a>
+              </div>
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" id="remove_file" name="remove_file">
+                <label class="form-check-label" for="remove_file">Remover arquivo atual ao salvar</label>
+              </div>
+            {% else %}
+              <div class="empty-state py-3">Este modelo ainda não possui arquivo.</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="col-12">
+        <label class="form-label" for="applicability">Aplicabilidade</label>
+        <textarea class="form-control" id="applicability" name="applicability" rows="3" required>{{ model.applicability|default('', true) }}</textarea>
+      </div>
+    </div>
+    <div class="d-flex gap-2 justify-content-end mt-3">
+      <a class="btn btn-outline-secondary" href="{{ url_for('model_list') }}">Cancelar</a>
+      <button class="btn btn-primary" type="submit">
+        <i data-lucide="save" aria-hidden="true"></i>
+        Salvar
+      </button>
+    </div>
+  </form>
+
+  {% if edit %}
+    <section class="section-panel no-print">
+      <div class="section-title">
+        <i data-lucide="trash-2" aria-hidden="true"></i>
+        Excluir modelo
+      </div>
+      <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+        <div class="small-muted">Remove o cadastro do modelo e o arquivo vinculado, se existir.</div>
+        <form method="post" action="{{ url_for('model_delete', model_id=model.id) }}" onsubmit="return confirm('Deseja excluir este modelo? Esta ação não pode ser desfeita.');">
+          <button class="btn btn-outline-danger" type="submit">
+            <i data-lucide="trash-2" aria-hidden="true"></i>
+            Excluir modelo
+          </button>
+        </form>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

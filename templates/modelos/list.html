@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Modelos - Checklist de Contratação{% endblock %}
+
+{% block content %}
+  <div class="page-title">
+    <div>
+      <h1>Modelos de documentos</h1>
+      <div class="small-muted">Versões e aplicabilidade dos modelos disponíveis.</div>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('model_new') }}">
+      <i data-lucide="plus" aria-hidden="true"></i>
+      Novo modelo
+    </a>
+  </div>
+
+  <section class="section-panel">
+    {% if models %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Tipo</th>
+              <th>Versão</th>
+              <th>Aplicabilidade</th>
+              <th>Status</th>
+              <th>Arquivo</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for model in models %}
+              <tr>
+                <td>{{ model.title }}</td>
+                <td>{{ model.document_type }}</td>
+                <td>{{ model.version }}</td>
+                <td>{{ model.applicability }}</td>
+                <td><span class="badge text-bg-{{ 'success' if model.status == 'Ativo' else 'secondary' }}">{{ model.status }}</span></td>
+                <td>
+                  {% if model.stored_filename %}
+                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('uploaded_file', filename=model.stored_filename) }}" target="_blank">
+                      <i data-lucide="download" aria-hidden="true"></i>
+                      Baixar
+                    </a>
+                  {% else %}
+                    <span class="small-muted">Sem arquivo</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('model_edit', model_id=model.id) }}">
+                    <i data-lucide="pencil" aria-hidden="true"></i>
+                    Editar
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">Nenhum modelo cadastrado.</div>
+    {% endif %}
+  </section>
+{% endblock %}

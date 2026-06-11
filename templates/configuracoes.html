@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Regras - Checklist de Contratação{% endblock %}
+
+{% block content %}
+  {% set cfg = namespace(threshold='500000', validator='Analista de contratação') %}
+  {% for row in settings_rows %}
+    {% if row.key == 'committee_threshold' %}{% set cfg.threshold = row.value %}{% endif %}
+    {% if row.key == 'default_validator' %}{% set cfg.validator = row.value %}{% endif %}
+  {% endfor %}
+
+  <div class="page-title">
+    <div>
+      <h1>Configurações de regras</h1>
+      <div class="small-muted">Parâmetros usados na geração automática do checklist.</div>
+    </div>
+  </div>
+
+  <form class="section-panel" method="post">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label" for="committee_threshold">Alçada para ata do comitê</label>
+        <input class="form-control" id="committee_threshold" name="committee_threshold" data-money value="{{ cfg.threshold|float|money }}">
+      </div>
+      <div class="col-md-8">
+        <label class="form-label" for="default_validator">Responsável padrão pela validação</label>
+        <input class="form-control" id="default_validator" name="default_validator" value="{{ cfg.validator }}">
+      </div>
+    </div>
+    <div class="d-flex justify-content-end mt-3">
+      <button class="btn btn-primary" type="submit">
+        <i data-lucide="save" aria-hidden="true"></i>
+        Salvar regras
+      </button>
+    </div>
+  </form>
+
+  <form class="section-panel" method="post">
+    <input type="hidden" name="form_type" value="applicability_rules">
+    <div class="section-title">
+      <i data-lucide="list-checks" aria-hidden="true"></i>
+      Matriz configurável de aplicabilidade
+    </div>
+    <div class="small-muted mb-3">
+      Altere estas regras quando o cliente decidir que um documento deve ser obrigatório, não aplicável, exigir modelo, justificativa ou aprovação superior.
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Documento</th>
+            <th>Ativo</th>
+            <th>Obrigatório</th>
+            <th>NSA</th>
+            <th>Justificativa</th>
+            <th>Modelo</th>
+            <th>Aprovação</th>
+            <th>Aplicabilidade personalizada</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rule in applicability_rules %}
+            <tr>
+              <td><strong>{{ rule.document_name }}</strong></td>
+              <td><input class="form-check-input" type="checkbox" name="enabled_{{ rule.id }}" {% if rule.enabled %}checked{% endif %}></td>
+              <td><input class="form-check-input" type="checkbox" name="force_required_{{ rule.id }}" {% if rule.force_required %}checked{% endif %}></td>
+              <td><input class="form-check-input" type="checkbox" name="force_not_applicable_{{ rule.id }}" {% if rule.force_not_applicable %}checked{% endif %}></td>
+              <td><input class="form-check-input" type="checkbox" name="requires_justification_{{ rule.id }}" {% if rule.requires_justification %}checked{% endif %}></td>
+              <td><input class="form-check-input" type="checkbox" name="requires_standard_model_{{ rule.id }}" {% if rule.requires_standard_model %}checked{% endif %}></td>
+              <td><input class="form-check-input" type="checkbox" name="requires_superior_approval_{{ rule.id }}" {% if rule.requires_superior_approval %}checked{% endif %}></td>
+              <td>
+                <textarea class="form-control form-control-sm" name="custom_applicability_{{ rule.id }}" rows="2">{{ rule.custom_applicability or '' }}</textarea>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex justify-content-end mt-3">
+      <button class="btn btn-primary" type="submit">
+        <i data-lucide="refresh-cw" aria-hidden="true"></i>
+        Salvar matriz e recalcular checklists
+      </button>
+    </div>
+  </form>
+
+  <section class="section-panel">
+    <div class="section-title">
+      <i data-lucide="workflow" aria-hidden="true"></i>
+      Matriz automática aplicada
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Documento</th>
+            <th>Regra principal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Formalização da Demanda</td><td>Obrigatória para licitação de serviço ou fornecimento.</td></tr>
+          <tr><td>Estudos Preliminares</td><td>Dispensados em dispensa por valor, remanescente ou emergência.</td></tr>
+          <tr><td>Mapa de Riscos</td><td>Dispensado em dispensa por valor, remanescente ou emergência.</td></tr>
+          <tr><td>Projeto Básico / Termo de Referência</td><td>Aplicado a licitações e contratações diretas com instrumento contratual.</td></tr>
+          <tr><td>Parecer Jurídico</td><td>Exigido para contratação direta, exceto dispensa por valor, e adesão à ata.</td></tr>
+          <tr><td>Ata do Comitê Gestor</td><td>Exigida quando a demanda ultrapassa a alçada configurada ou marcação manual.</td></tr>
+          <tr><td>Declaração de Vedação ao Nepotismo</td><td>Exigida em contratação direta e adesão à ata de registro de preços.</td></tr>
+          <tr><td>Checklist Final</td><td>Gerado para todos os processos.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

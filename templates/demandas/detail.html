@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}{{ demand.process_number }} - Checklist de Contratação{% endblock %}
+
+{% block content %}
+  <div class="page-title">
+    <div>
+      <h1>{{ demand.process_number }}</h1>
+      <div class="small-muted">{{ demand.object }}</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 no-print">
+      <a class="btn btn-outline-secondary" href="{{ url_for('demand_edit', demand_id=demand.id) }}">
+        <i data-lucide="pencil" aria-hidden="true"></i>
+        Editar
+      </a>
+      <a class="btn btn-outline-primary" href="{{ url_for('report_demand', demand_id=demand.id) }}">
+        <i data-lucide="file-check-2" aria-hidden="true"></i>
+        Relatório
+      </a>
+      <a class="btn btn-outline-primary" href="{{ url_for('proposal_generate', demand_id=demand.id) }}">
+        <i data-lucide="file-output" aria-hidden="true"></i>
+        Proposta
+      </a>
+      <a class="btn btn-outline-primary" href="{{ url_for('estimate_generate', demand_id=demand.id) }}">
+        <i data-lucide="calculator" aria-hidden="true"></i>
+        Estimativa
+      </a>
+      <a class="btn btn-outline-primary" href="{{ url_for('committee_minutes_generate', demand_id=demand.id) }}">
+        <i data-lucide="users-round" aria-hidden="true"></i>
+        Ata
+      </a>
+      <a class="btn btn-outline-primary" href="{{ url_for('designation_generate', demand_id=demand.id) }}">
+        <i data-lucide="file-signature" aria-hidden="true"></i>
+        Termo
+      </a>
+    </div>
+  </div>
+
+  <section class="section-panel">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="small-muted">Status</div>
+        <span class="badge text-bg-{{ demand.status|status_class }}">{{ demand.status }}</span>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Unidade</div>
+        <strong>{{ demand.unit_name }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Tipo</div>
+        <strong>{{ demand.contract_type }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Valor estimado</div>
+        <strong>{{ demand.estimated_value|money }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Responsável</div>
+        <strong>{{ demand.responsible }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Abertura</div>
+        <strong>{{ demand.opening_date|date_br }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Fornecedor/interessado</div>
+        <strong>{{ demand.supplier or '-' }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Valor da proposta</div>
+        <strong>{{ demand.proposal_value|money }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-panel">
+    <div class="section-title">
+      <i data-lucide="folder-check" aria-hidden="true"></i>
+      Módulos documentais
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="small-muted">Proposta</div>
+        <strong>{{ demand.supplier or '-' }}</strong>
+        <div class="small-muted">
+          Valor {{ demand.proposal_value|money }} · Cadastrada no sistema: {{ 'Sim' if demand.proposal_registered_system else 'Não' }} · Gerada: {{ 'Sim' if demand.proposal_generated else 'Não' }}
+        </div>
+        {% if demand.proposal_notes %}
+          <div>{{ demand.proposal_notes }}</div>
+        {% endif %}
+      </div>
+      <div class="col-lg-6">
+        <div class="small-muted">Estimativa de preços</div>
+        <strong>{{ demand.estimate_source or '-' }}</strong>
+        <div class="small-muted">Responsável: {{ demand.price_research_responsible or '-' }} · Cotação: {{ demand.quotation_date|date_br }}</div>
+        {% if demand.price_research_summary %}
+          <div>{{ demand.price_research_summary }}</div>
+        {% endif %}
+      </div>
+      <div class="col-lg-6">
+        <div class="small-muted">Ata do comitê</div>
+        <strong>{{ demand.committee_record_number or '-' }}</strong>
+        <div class="small-muted">Data da reunião: {{ demand.committee_meeting_date|date_br }}</div>
+        {% if demand.controller_opinion %}
+          <div>{{ demand.controller_opinion }}</div>
+        {% endif %}
+      </div>
+      <div class="col-lg-6">
+        <div class="small-muted">Termo de designação</div>
+        <strong>{{ demand.chief_fiscal or '-' }}</strong>
+        <div class="small-muted">
+          Substituto: {{ demand.substitute_fiscal or '-' }} · Gestor: {{ demand.contract_manager or '-' }} · Gerado: {{ 'Sim' if demand.designation_document_generated else 'Não' }}
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="small-muted">Conclusão formal</div>
+        <strong>{{ demand.final_responsible or demand.responsible }}</strong>
+        <div class="small-muted">Data: {{ demand.conclusion_date|date_br }}</div>
+        <div>{{ demand.conclusion_summary or 'Conclusão ainda não registrada.' }}</div>
+      </div>
+    </div>
+  </section>
+
+  {% set ns = namespace(required=0, validated=0, pending=0, sent=0) %}
+  {% for item in items %}
+    {% if item.required %}{% set ns.required = ns.required + 1 %}{% endif %}
+    {% if item.status == 'Validado' %}{% set ns.validated = ns.validated + 1 %}{% endif %}
+    {% if item.required and item.status in ['Pendente', 'Não iniciado'] %}{% set ns.pending = ns.pending + 1 %}{% endif %}
+    {% if item.status == 'Anexado' %}{% set ns.sent = ns.sent + 1 %}{% endif %}
+  {% endfor %}
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <span class="stat-label">Itens obrigatórios</span>
+      <span class="stat-number">{{ ns.required }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Validados</span>
+      <span class="stat-number">{{ ns.validated }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Pendentes</span>
+      <span class="stat-number">{{ ns.pending }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Aguardando análise</span>
+      <span class="stat-number">{{ ns.sent }}</span>
+    </div>
+  </div>
+
+  <section class="section-panel">
+    <div class="section-title">
+      <i data-lucide="clipboard-list" aria-hidden="true"></i>
+      Checklist automático
+    </div>
+
+    {% for item in items %}
+      <article class="checklist-item" id="item-{{ item.id }}">
+        <div class="checklist-header">
+          <div>
+            <div class="checklist-title">
+              <span>{{ item.sort_order }}.</span>
+              <span>{{ item.document_name }}</span>
+            </div>
+            <div class="small-muted">{{ item.applicability }}</div>
+          </div>
+          <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <span class="badge text-bg-{{ item.status|status_class }}">{{ item.status }}</span>
+            <span class="badge text-bg-{{ item.validation_status|status_class }}">{{ item.validation_status }}</span>
+            {% if item.required %}
+              <span class="badge text-bg-warning">Obrigatório</span>
+            {% else %}
+              <span class="badge text-bg-secondary">Opcional/NSA</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="small-muted">Modelo</div>
+            {% if item.model_available %}
+              <strong>{{ item.model_name or 'Modelo disponível' }}</strong>
+            {% else %}
+              <span>-</span>
+            {% endif %}
+          </div>
+          <div class="col-lg-4">
+            <div class="small-muted">Responsável pelo envio</div>
+            <strong>{{ item.responsible_send or '-' }}</strong>
+          </div>
+          <div class="col-lg-4">
+            <div class="small-muted">Responsável pela validação</div>
+            <strong>{{ item.responsible_validate or '-' }}</strong>
+          </div>
+          {% if item.observation %}
+            <div class="col-12">
+              <div class="small-muted">Observação</div>
+              <div>{{ item.observation }}</div>
+            </div>
+          {% endif %}
+          {% if item.validation_observation %}
+            <div class="col-12">
+              <div class="small-muted">Observação da validação</div>
+              <div>{{ item.validation_observation }}</div>
+            </div>
+          {% endif %}
+        </div>
+
+        <hr>
+
+        <div class="row g-3">
+          <div class="col-xl-5">
+            <form method="post" action="{{ url_for('checklist_update', item_id=item.id) }}">
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label" for="status-{{ item.id }}">Status do item</label>
+                  <select class="form-select" id="status-{{ item.id }}" name="status">
+                    {% for status in item_statuses %}
+                      <option value="{{ status }}" {% if item.status == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="responsible-send-{{ item.id }}">Envio</label>
+                  <input class="form-control" id="responsible-send-{{ item.id }}" name="responsible_send" value="{{ item.responsible_send or '' }}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="responsible-validate-{{ item.id }}">Validação</label>
+                  <input class="form-control" id="responsible-validate-{{ item.id }}" name="responsible_validate" value="{{ item.responsible_validate or '' }}">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                  <button class="btn btn-outline-primary w-100" type="submit">
+                    <i data-lucide="save" aria-hidden="true"></i>
+                    Atualizar
+                  </button>
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="observation-{{ item.id }}">Observação</label>
+                  <textarea class="form-control" id="observation-{{ item.id }}" name="observation" rows="2">{{ item.observation or '' }}</textarea>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="col-xl-3">
+            <form method="post" action="{{ url_for('checklist_upload', item_id=item.id) }}" enctype="multipart/form-data">
+              <label class="form-label" for="document-{{ item.id }}">
+                {% if item.document_name == 'Anexos Técnicos' %}
+                  Anexos técnicos
+                {% else %}
+                  Anexo
+                {% endif %}
+              </label>
+              <input class="form-control mb-2" id="document-{{ item.id }}" name="document" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" required>
+              {% if item.document_name == 'Anexos Técnicos' %}
+                <div class="small-muted mb-2">Este item aceita vários arquivos ativos.</div>
+              {% endif %}
+              <button class="btn btn-primary w-100" type="submit">
+                <i data-lucide="upload" aria-hidden="true"></i>
+                Enviar arquivo
+              </button>
+            </form>
+          </div>
+
+          <div class="col-xl-4">
+            <form method="post" action="{{ url_for('checklist_validate', item_id=item.id) }}">
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label" for="validation-{{ item.id }}">Validação</label>
+                  <select class="form-select" id="validation-{{ item.id }}" name="validation_status" data-requires-observation="#validation-observation-{{ item.id }}">
+                    {% for status in validation_statuses %}
+                      <option value="{{ status }}" {% if item.validation_status == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                  <button class="btn btn-outline-primary w-100" type="submit">
+                    <i data-lucide="badge-check" aria-hidden="true"></i>
+                    Validar
+                  </button>
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="validation-observation-{{ item.id }}">Observação da validação</label>
+                  <textarea class="form-control" id="validation-observation-{{ item.id }}" name="validation_observation" rows="2">{{ item.validation_observation or '' }}</textarea>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          {% set documents = docs_by_item.get(item.id, []) %}
+          {% if documents %}
+            <ul class="document-list">
+              {% for document in documents %}
+                <li class="{% if not document.active %}opacity-75{% endif %}">
+                  <div>
+                    <strong>{{ document.original_filename }}</strong>
+                    <span class="badge text-bg-light">v{{ document.version }}</span>
+                    {% if document.active %}
+                      <span class="badge text-bg-success">Ativo</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">Substituído/excluído</span>
+                    {% endif %}
+                    <div class="small-muted">
+                      Enviado por {{ document.uploaded_by_name or '-' }} em {{ document.uploaded_at|datetime_br }}
+                      {% if document.deletion_reason %} · Justificativa: {{ document.deletion_reason }}{% endif %}
+                    </div>
+                  </div>
+                  <div class="d-flex flex-wrap gap-2 justify-content-end">
+                    {% if document.active and not document.deleted_at %}
+                      <a class="btn btn-sm btn-outline-primary" href="{{ url_for('uploaded_file', filename=document.stored_filename) }}" target="_blank">
+                        <i data-lucide="eye" aria-hidden="true"></i>
+                        Visualizar
+                      </a>
+                      <form class="d-flex gap-2" method="post" action="{{ url_for('document_delete', document_id=document.id) }}">
+                        <input class="form-control form-control-sm" name="deletion_reason" placeholder="Justificativa" required>
+                        <button class="btn btn-sm btn-outline-danger icon-btn" type="submit" title="Excluir">
+                          <i data-lucide="trash-2" aria-hidden="true"></i>
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="empty-state py-3">Nenhum arquivo anexado neste item.</div>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="section-panel" id="cronograma">
+    <div class="section-title">
+      <i data-lucide="calendar-days" aria-hidden="true"></i>
+      Cronograma de desembolso
+    </div>
+    <form class="row g-2 align-items-end no-print" method="post" action="{{ url_for('disbursement_add', demand_id=demand.id) }}">
+      <div class="col-md-2">
+        <label class="form-label" for="installment">Parcela</label>
+        <input class="form-control" id="installment" name="installment" type="number" min="1" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="expected_month">Mês previsto</label>
+        <input class="form-control" id="expected_month" name="expected_month" type="month" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="expected_value">Valor previsto</label>
+        <input class="form-control" id="expected_value" name="expected_value" data-money>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="percent">Percentual</label>
+        <input class="form-control" id="percent" name="percent">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="observation">Observação</label>
+        <input class="form-control" id="observation" name="observation">
+      </div>
+      <div class="col-md-1">
+        <button class="btn btn-primary icon-btn w-100" type="submit" title="Adicionar">
+          <i data-lucide="plus" aria-hidden="true"></i>
+        </button>
+      </div>
+    </form>
+
+    {% if disbursements %}
+      {% set dsum = namespace(total=0) %}
+      <div class="table-responsive mt-3">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Parcela</th>
+              <th>Mês</th>
+              <th>Valor</th>
+              <th>Percentual</th>
+              <th>Observação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in disbursements %}
+              {% set dsum.total = dsum.total + item.expected_value %}
+              <tr>
+                <td>{{ item.installment }}</td>
+                <td>{{ item.expected_month }}</td>
+                <td>{{ item.expected_value|money }}</td>
+                <td>{{ item.percent }}%</td>
+                <td>{{ item.observation or '-' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="2">Total</th>
+              <th>{{ dsum.total|money }}</th>
+              <th colspan="2"></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state mt-3">Nenhuma parcela cadastrada.</div>
+    {% endif %}
+  </section>
+
+  <section class="section-panel">
+    <div class="section-title">
+      <i data-lucide="history" aria-hidden="true"></i>
+      Histórico
+    </div>
+    {% if history %}
+      <ul class="timeline">
+        {% for entry in history %}
+          <li>
+            <strong>{{ entry.action }}</strong>
+            <div class="small-muted">{{ entry.created_at|datetime_br }} · {{ entry.user_name or 'Sistema' }}</div>
+            {% if entry.details %}<div>{{ entry.details }}</div>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state">Nenhuma movimentação registrada.</div>
+    {% endif %}
+  </section>
+{% endblock %}

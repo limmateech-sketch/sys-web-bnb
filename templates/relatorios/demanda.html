@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Relatório {{ demand.process_number }} - Checklist de Contratação{% endblock %}
+
+{% block content %}
+  {% set ns = namespace(required=0, validated=0, pending=0, attached=0, not_applicable=0, corrections=0) %}
+  {% for item in items %}
+    {% if item.required %}{% set ns.required = ns.required + 1 %}{% endif %}
+    {% if item.status == 'Validado' or item.validation_status == 'Aprovado' %}{% set ns.validated = ns.validated + 1 %}{% endif %}
+    {% if item.required and item.status in ['Pendente', 'Não iniciado'] %}{% set ns.pending = ns.pending + 1 %}{% endif %}
+    {% if item.status == 'Anexado' %}{% set ns.attached = ns.attached + 1 %}{% endif %}
+    {% if item.status == 'Não se aplica' %}{% set ns.not_applicable = ns.not_applicable + 1 %}{% endif %}
+    {% if item.validation_status in ['Reprovado', 'Corrigir'] %}{% set ns.corrections = ns.corrections + 1 %}{% endif %}
+  {% endfor %}
+
+  <div class="page-title no-print">
+    <div>
+      <h1>Relatório final</h1>
+      <div class="small-muted">{{ demand.process_number }}</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('demand_detail', demand_id=demand.id) }}">
+        <i data-lucide="arrow-left" aria-hidden="true"></i>
+        Voltar
+      </a>
+      <button class="btn btn-primary" type="button" onclick="window.print()">
+        <i data-lucide="printer" aria-hidden="true"></i>
+        Imprimir
+      </button>
+    </div>
+  </div>
+
+  <section class="section-panel report-document">
+    <div class="report-header">
+      <div>
+        <h1 class="h4 mb-1">Checklist da Licitação ou Contratação</h1>
+        <div>{{ demand.process_number }} · {{ demand.object }}</div>
+      </div>
+      <div class="text-md-end">
+        <span class="badge text-bg-{{ demand.status|status_class }}">{{ demand.status }}</span>
+        <div class="small-muted mt-1">Emitido em {{ today|date_br }}</div>
+      </div>
+    </div>
+
+    <div class="report-summary-grid mb-3">
+      <div>
+        <span class="small-muted">Obrigatórios</span>
+        <strong>{{ ns.required }}</strong>
+      </div>
+      <div>
+        <span class="small-muted">Validados</span>
+        <strong>{{ ns.validated }}</strong>
+      </div>
+      <div>
+        <span class="small-muted">Pendentes</span>
+        <strong>{{ ns.pending }}</strong>
+      </div>
+      <div>
+        <span class="small-muted">Em correção</span>
+        <strong>{{ ns.corrections }}</strong>
+      </div>
+      <div>
+        <span class="small-muted">Não se aplica</span>
+        <strong>{{ ns.not_applicable }}</strong>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-3">
+        <div class="small-muted">Unidade</div>
+        <strong>{{ demand.unit_name }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Tipo</div>
+        <strong>{{ demand.contract_type }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Valor estimado</div>
+        <strong>{{ demand.estimated_value|money }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Responsável</div>
+        <strong>{{ demand.responsible }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Abertura</div>
+        <strong>{{ demand.opening_date|date_br }}</strong>
+      </div>
+      <div class="col-md-3">
+        <div class="small-muted">Conclusão</div>
+        <strong>{{ demand.conclusion_date|date_br }}</strong>
+      </div>
+      <div class="col-md-6">
+        <div class="small-muted">Responsável final</div>
+        <strong>{{ demand.final_responsible or demand.responsible }}</strong>
+      </div>
+    </div>
+
+    <div class="report-block">
+      <h2>Resumo dos módulos</h2>
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <tbody>
+            <tr>
+              <th>Proposta</th>
+              <td>
+                {{ demand.supplier or '-' }} · {{ demand.proposal_value|money }} ·
+                Gerada pelo sistema: {{ 'Sim' if demand.proposal_generated else 'Não' }}
+              </td>
+            </tr>
+            <tr>
+              <th>Estimativa de preços</th>
+              <td>
+                Fonte: {{ demand.estimate_source or '-' }} · Responsável: {{ demand.price_research_responsible or '-' }} ·
+                Cotação: {{ demand.quotation_date|date_br }}
+              </td>
+            </tr>
+            <tr>
+              <th>Ata do comitê</th>
+              <td>
+                Ata: {{ demand.committee_record_number or '-' }} · Reunião: {{ demand.committee_meeting_date|date_br }}
+              </td>
+            </tr>
+            <tr>
+              <th>Termo de designação</th>
+              <td>
+                Fiscal titular: {{ demand.chief_fiscal or '-' }} · Substituto: {{ demand.substitute_fiscal or '-' }} ·
+                Gestor: {{ demand.contract_manager or '-' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="report-block">
+      <h2>Checklist documental</h2>
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Documento</th>
+              <th>Aplicabilidade</th>
+              <th>Obrigatório</th>
+              <th>Status</th>
+              <th>Anexos ativos</th>
+              <th>Responsáveis</th>
+              <th>Observações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+              <tr>
+                <td>{{ item.sort_order }}</td>
+                <td>{{ item.document_name }}</td>
+                <td>{{ item.applicability }}</td>
+                <td>{{ 'Sim' if item.required else 'Não' }}</td>
+                <td>
+                  <span class="badge text-bg-{{ item.status|status_class }}">{{ item.status }}</span>
+                  <span class="badge text-bg-{{ item.validation_status|status_class }}">{{ item.validation_status }}</span>
+                </td>
+                <td>{{ item.attachment_count }}</td>
+                <td>
+                  Envio: {{ item.responsible_send or '-' }}<br>
+                  Validação: {{ item.responsible_validate or '-' }}
+                </td>
+                <td>
+                  {{ item.observation or '-' }}
+                  {% if item.validation_observation %}
+                    <br>{{ item.validation_observation }}
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="report-block report-conclusion">
+      <h2>Conclusão formal</h2>
+      {% if demand.conclusion_summary %}
+        <p>{{ demand.conclusion_summary }}</p>
+      {% elif ns.corrections > 0 %}
+        <p>O processo requer correções documentais antes do fechamento, pois há item reprovado ou marcado para correção.</p>
+      {% elif ns.pending > 0 %}
+        <p>O processo possui pendências obrigatórias e deve permanecer em acompanhamento até a regularização dos documentos indicados.</p>
+      {% else %}
+        <p>Com base nos documentos registrados e nas validações disponíveis no sistema, o processo está apto ao encerramento documental.</p>
+      {% endif %}
+      <div class="report-signature">
+        <span>{{ demand.final_responsible or demand.responsible }}</span>
+        <small>Responsável pelo fechamento</small>
+      </div>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if edit else 'Nova' }} demanda - Checklist de Contratação{% endblock %}
+
+{% block content %}
+  <div class="page-title">
+    <div>
+      <h1>{{ 'Editar demanda' if edit else 'Nova demanda' }}</h1>
+      <div class="small-muted">Dados que acionam as regras automáticas do checklist.</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('demand_list') }}">
+      <i data-lucide="arrow-left" aria-hidden="true"></i>
+      Voltar
+    </a>
+  </div>
+
+  <form method="post">
+    <section class="section-panel">
+      <div class="section-title">
+        <i data-lucide="file-text" aria-hidden="true"></i>
+        Cadastro da demanda
+      </div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label" for="process_number">Número do processo</label>
+          <input class="form-control" id="process_number" name="process_number" value="{{ demand.process_number|default('', true) }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="unit_id">Unidade demandante</label>
+          {% set selected_unit = demand.unit_id|string %}
+          <select class="form-select" id="unit_id" name="unit_id" required>
+            <option value="">Selecione</option>
+            {% for unit in units %}
+              <option value="{{ unit.id }}" {% if selected_unit == unit.id|string %}selected{% endif %}>{{ unit.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="responsible">Responsável pela demanda</label>
+          <input class="form-control" id="responsible" name="responsible" value="{{ demand.responsible|default('', true) }}" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="object">Objeto da contratação</label>
+          <textarea class="form-control" id="object" name="object" rows="3" required>{{ demand.object|default('', true) }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="contract_type">Tipo de contratação</label>
+          {% set selected_type = demand.contract_type|default('Licitação', true) %}
+          <select class="form-select" id="contract_type" name="contract_type" required>
+            {% for type in contract_types %}
+              <option value="{{ type }}" {% if selected_type == type %}selected{% endif %}>{{ type }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="estimated_value">Valor estimado</label>
+          <input class="form-control" id="estimated_value" name="estimated_value" data-money value="{% if demand.estimated_value is defined %}{{ demand.estimated_value|money }}{% endif %}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="opening_date">Data de abertura</label>
+          <input class="form-control" id="opening_date" name="opening_date" type="date" value="{{ demand.opening_date|default(today, true) }}" required>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-panel">
+      <div class="section-title">
+        <i data-lucide="sliders-horizontal" aria-hidden="true"></i>
+        Parâmetros de aplicabilidade
+      </div>
+      <div class="row g-3">
+        {% set flags = [
+          ('engineering_service', 'Há obra ou serviço de engenharia'),
+          ('common_acquisition', 'Há aquisição comum'),
+          ('emergency', 'Contratação emergencial'),
+          ('outside_capgv', 'Unidade fora do CAPGV'),
+          ('dispensa_por_valor', 'Dispensa em razão do valor'),
+          ('exceeds_authority', 'Ultrapassa alçada do COGES'),
+          ('requires_contract', 'Requer instrumento contratual')
+        ] %}
+        {% for name, label in flags %}
+          <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="{{ name }}" name="{{ name }}" {% if demand[name]|default(false) %}checked{% endif %}>
+              <label class="form-check-label" for="{{ name }}">{{ label }}</label>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="section-panel">
+      <div class="section-title">
+        <i data-lucide="landmark" aria-hidden="true"></i>
+        Fundamentação, proposta e orçamento
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="legal_foundation">Fundamentação legal ou justificativa</label>
+          <textarea class="form-control" id="legal_foundation" name="legal_foundation" rows="3">{{ demand.legal_foundation|default('', true) }}</textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="estimate_source">Fonte da estimativa</label>
+          <textarea class="form-control" id="estimate_source" name="estimate_source" rows="3">{{ demand.estimate_source|default('', true) }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="price_research_responsible">Responsável pela pesquisa</label>
+          <input class="form-control" id="price_research_responsible" name="price_research_responsible" value="{{ demand.price_research_responsible|default('', true) }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="quotation_date">Data da cotação</label>
+          <input class="form-control" id="quotation_date" name="quotation_date" type="date" value="{{ demand.quotation_date|default('', true) }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="proposal_value">Valor da proposta</label>
+          <input class="form-control" id="proposal_value" name="proposal_value" data-money value="{% if demand.proposal_value is defined %}{{ demand.proposal_value|money }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="supplier">Fornecedor ou interessado</label>
+          <input class="form-control" id="supplier" name="supplier" value="{{ demand.supplier|default('', true) }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="proposal_history">Histórico da proposta</label>
+          <input class="form-control" id="proposal_history" name="proposal_history" value="{{ demand.proposal_history|default('', true) }}">
+        </div>
+        <div class="col-md-4">
+          <div class="form-check form-switch mt-4">
+            <input class="form-check-input" type="checkbox" role="switch" id="proposal_registered_system" name="proposal_registered_system" {% if demand.proposal_registered_system|default(false) %}checked{% endif %}>
+            <label class="form-check-label" for="proposal_registered_system">Proposta cadastrada no S320/equivalente</label>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="budget_allocation">Dotação orçamentária</label>
+          <input class="form-control" id="budget_allocation" name="budget_allocation" value="{{ demand.budget_allocation|default('', true) }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="budget_source">Fonte de recurso</label>
+          <input class="form-control" id="budget_source" name="budget_source" value="{{ demand.budget_source|default('', true) }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="budget_availability">Disponibilidade orçamentária</label>
+          <input class="form-control" id="budget_availability" name="budget_availability" value="{{ demand.budget_availability|default('', true) }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="budget_unit">Unidade orçamentária</label>
+          <input class="form-control" id="budget_unit" name="budget_unit" value="{{ demand.budget_unit|default('', true) }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="expense_nature">Natureza da despesa</label>
+          <input class="form-control" id="expense_nature" name="expense_nature" value="{{ demand.expense_nature|default('', true) }}">
+        </div>
+        <div class="col-md-12">
+          <label class="form-label" for="controller_opinion">Parecer ou validação da controladoria</label>
+          <textarea class="form-control" id="controller_opinion" name="controller_opinion" rows="2">{{ demand.controller_opinion|default('', true) }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-panel">
+      <div class="section-title">
+        <i data-lucide="search-check" aria-hidden="true"></i>
+        Estimativa de preços
+      </div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label" for="price_research_summary">Pesquisas de preço realizadas</label>
+          <textarea class="form-control" id="price_research_summary" name="price_research_summary" rows="3">{{ demand.price_research_summary|default('', true) }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="reference_documents">Documentos de referência</label>
+          <textarea class="form-control" id="reference_documents" name="reference_documents" rows="3">{{ demand.reference_documents|default('', true) }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="external_consultations">Consultas externas ou bancos de preços</label>
+          <textarea class="form-control" id="external_consultations" name="external_consultations" rows="3">{{ demand.external_consultations|default('', true) }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-panel">
+      <div class="section-title">
+        <i data-lucide="file-signature" aria-hidden="true"></i>
+        Proposta e documentos gerados
+      </div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="form-check form-switch mt-4">
+            <input class="form-check-input" type="checkbox" role="switch" id="proposal_generated" name="proposal_generated" {% if demand.proposal_generated|default(false) %}checked{% endif %}>
+            <label class="form-check-label" for="proposal_generated">Proposta gerada pelo sistema</label>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label" for="proposal_notes">Observações da proposta</label>
+          <textarea class="form-control" id="proposal_notes" name="proposal_notes" rows="2">{{ demand.proposal_notes|default('', true) }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-panel">
+      <div class="section-title">
+        <i data-lucide="users-round" aria-hidden="true"></i>
+        Ata do comitê e termo de designação
+      </div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label" for="committee_meeting_date">Data da reunião</label>
+          <input class="form-control" id="committee_meeting_date" name="committee_meeting_date" type="date" value="{{ demand.committee_meeting_date|default('', true) }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="committee_record_number">Número da ata</label>
+          <input class="form-control" id="committee_record_number" name="committee_record_number" value="{{ demand.committee_record_number|default('', true) }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="chief_fiscal">Fiscal titular</label>
+          <input class="form-control" id="chief_fiscal" name="chief_fiscal" value="{{ demand.chief_fiscal|default('', true) }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="substitute_fiscal">Fiscal substituto</label>
+          <input class="form-control" id="substitute_fiscal" name="substitute_fiscal" value="{{ demand.substitute_fiscal|default('', true) }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="contract_manager">Gestor do contrato</label>
+          <input class="form-control" id="contract_manager" name="contract_manager" value="{{ demand.contract_manager|default('', true) }}">
+        </div>
+        <div class="col-md-4">
+          <div class="form-check form-switch mt-4">
+            <input class="form-check-input" type="checkbox" role="switch" id="designation_document_generated" name="designation_document_generated" {% if demand.designation_document_generated|default(false) %}checked{% endif %}>
+            <label class="form-check-label" for="designation_document_generated">Termo de designação gerado</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-panel">
+      <div class="section-title">
+        <i data-lucide="file-check-2" aria-hidden="true"></i>
+        Conclusão formal
+      </div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label" for="conclusion_date">Data de conclusão</label>
+          <input class="form-control" id="conclusion_date" name="conclusion_date" type="date" value="{{ demand.conclusion_date|default('', true) }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="final_responsible">Responsável final</label>
+          <input class="form-control" id="final_responsible" name="final_responsible" value="{{ demand.final_responsible|default('', true) }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="conclusion_summary">Resumo da conclusão</label>
+          <textarea class="form-control" id="conclusion_summary" name="conclusion_summary" rows="2">{{ demand.conclusion_summary|default('', true) }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <div class="d-flex gap-2 justify-content-end no-print">
+      <a class="btn btn-outline-secondary" href="{{ url_for('demand_list') }}">Cancelar</a>
+      <button class="btn btn-primary" type="submit">
+        <i data-lucide="save" aria-hidden="true"></i>
+        Salvar
+      </button>
+    </div>
+  </form>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios - Checklist de Contratação{% endblock %}
+
+{% block content %}
+  <div class="page-title">
+    <div>
+      <h1>Relatórios</h1>
+      <div class="small-muted">Checklist final por processo.</div>
+    </div>
+  </div>
+
+  <section class="section-panel">
+    {% if demands %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Processo</th>
+              <th>Unidade</th>
+              <th>Status</th>
+              <th>Obrigatórios</th>
+              <th>Validados</th>
+              <th>Pendentes</th>
+              <th class="text-end">Relatório</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for demand in demands %}
+              <tr>
+                <td>{{ demand.process_number }}</td>
+                <td>{{ demand.unit_name }}</td>
+                <td><span class="badge text-bg-{{ demand.status|status_class }}">{{ demand.status }}</span></td>
+                <td>{{ demand.required_total or 0 }}</td>
+                <td>{{ demand.validated_total or 0 }}</td>
+                <td>{{ demand.pending_total or 0 }}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('report_demand', demand_id=demand.id) }}">
+                    <i data-lucide="file-check-2" aria-hidden="true"></i>
+                    Abrir
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">Nenhuma demanda cadastrada.</div>
+    {% endif %}
+  </section>
+{% endblock %}
